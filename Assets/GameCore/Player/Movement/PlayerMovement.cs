@@ -1,39 +1,66 @@
-using System.Collections;
-using System.Collections.Generic;
+using Assets.GameCore.ScriptableObjects;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
 public class PlayerMovement : MonoBehaviour
 {
-    public float moveSpeed = 5f;
-    public float jumpForce = 10f;
-    private bool isGrounded;
+    [SerializeField] private PlayerSettings _settings;
+    [SerializeField] private Animator _animController;
+    private bool _isGrounded, _movementThisFrame, _jumpInput;
+    private Vector3 _moveDirection, _moveVelocity;
 
     private Rigidbody rb;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        rb.freezeRotation = true; // Disable rigidbody rotation
     }
 
     void Update()
     {
         // Check if the player is on the ground
-        isGrounded = Physics.Raycast(transform.position, Vector3.down, 0.1f);
+        _isGrounded = Physics.Raycast(transform.position, Vector3.down, 0.1f);
 
         // Player movement
         float horizontalInput = Input.GetAxis("Horizontal");
         float verticalInput = Input.GetAxis("Vertical");
+        bool jumpInput = Input.GetButtonDown("Jump");
 
-        Vector3 moveDirection = new Vector3(horizontalInput, 0f, verticalInput).normalized;
-        Vector3 moveVelocity = moveDirection * moveSpeed;
+        if (horizontalInput != 0 || verticalInput != 0 || jumpInput)
+        {
+            _movementThisFrame = true;
+            _animController.SetBool("Walking", true);
+            _moveDirection = new Vector3(horizontalInput, 0f, verticalInput).normalized;
+            _moveVelocity = _moveDirection * _settings.MoveSpeed;
+            _jumpInput = jumpInput;
+        }
+        else
+        {
+            _animController.SetBool("Walking", false);
+        }
 
-        rb.velocity = new Vector3(moveVelocity.x, rb.velocity.y, moveVelocity.z);
+        //float horizontalSpeed = 2.0F;
+        float h = _settings.RotationSpeed * Input.GetAxis("Mouse X");
+        transform.Rotate(0, h, 0);
+    }
+
+    private void FixedUpdate()
+    {
+        if (_movementThisFrame == false)
+            return;
+
+        _movementThisFrame = false;
+
+        // Move the player using Rigidbody.MovePosition
+        rb.MovePosition(rb.position + _moveVelocity * Time.fixedDeltaTime);
 
         // Jumping
-        if (isGrounded && Input.GetButtonDown("Jump"))
+        if (_jumpInput && _isGrounded)
         {
-            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            rb.AddForce(Vector3.up * _settings.JumpForce, ForceMode.Impulse);
+            _animController.SetTrigger("Jump");
         }
+            
     }
 }
