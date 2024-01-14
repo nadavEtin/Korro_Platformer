@@ -20,9 +20,9 @@ public class PlayerMovement : MonoBehaviour
     void Update()
     {
         // Check if the player is on the ground
-        _isGrounded = Physics.Raycast(transform.position, Vector3.down, 0.1f);
+        _isGrounded = Mathf.Approximately(rb.velocity.y, 0);
 
-        // Player movement
+        // Player input
         float horizontalInput = Input.GetAxis("Horizontal");
         float verticalInput = Input.GetAxis("Vertical");
         bool jumpInput = Input.GetButtonDown("Jump");
